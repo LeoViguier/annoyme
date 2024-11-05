@@ -7,11 +7,28 @@ Are you still asking chatGPT for advice on what gift to get her ?
 Well, look no further, AnnoyMe is here to help you out. AnnoyMe is a simple python web server that listens for requests, and will do stuff on your computer to annoy you.
 
 This will:
-- Moving your mouse around
+- Move your mouse around
 - Move your windows around
-- Opening random applications
-- Typing random stuff
-- Playing random sounds
+- Open random applications
+- Type random stuff
+- Play random notification sounds
+- TTS message
 - All of them at the same time !
 
-It works by counting the number of requests it receives in 5 seconds, and it runs an action based on that number. The more requests you send, the more annoying it gets. You can configure a cooldown time to prevent it from being too annoying, but don't tell her.
+You can configure a cooldown time to prevent it from being too annoying, but don't tell her.
+
+## Installation
+
+You may use any version of python 3.7 or higher to make it work.
+```bash
+git clone https://github.com/LeoViguier/annoyme.git
+cd annoyme
+pip install -r requirements.txt
+```
+
+## Usage
+
+```bash
+python annoyme.py
+```
+If you want to add sounds, you can put `.wav` files in the `sounds` folder.

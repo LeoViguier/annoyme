@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Annoy Me</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: #efefef;
+        }
+        .container {
+            text-align: center;
+        }
+        button {
+        padding: 1.5em 6.5em;
+        background: #efefef;
+        border: none;
+        border-radius: .5rem;
+        color: #444;
+        font-size: 1rem;
+        font-weight: 700;
+        text-align: center;
+        outline: none;
+        cursor: pointer;
+        transition: .2s ease-in-out;
+        box-shadow: -6px -6px 14px rgba(255, 255, 255, .7),
+                    -6px -6px 10px rgba(255, 255, 255, .5),
+                    6px 6px 8px rgba(255, 255, 255, .075),
+                    6px 6px 10px rgba(0, 0, 0, .15);
+        }
+        button:active {
+        box-shadow: inset -2px -2px 6px rgba(255, 255, 255, .7),
+                    inset -2px -2px 4px rgba(255, 255, 255, .5),
+                    inset 2px 2px 2px rgba(255, 255, 255, .075),
+                    inset 2px 2px 4px rgba(0, 0, 0, .15);
+        }
+
+        .input-group {
+            display: flex;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .send {
+            padding: 10px 15px;
+        }
+
+        .input {
+            padding: 10px;
+            font-size: 16px;
+            width: 200px;
+            border: 1px solid #ddd;
+            border-radius: .5rem;
+        }
+    </style>
+    <script>
+        function sendAnnoyMe() {
+            fetch('/annoyme', {method: 'POST'})
+            .then(response => response.json())
+            .catch(error => {console.error("Error:", error);});
+        }
+        function sendFullAnnoyance() {
+            fetch('/all_actions', {method: 'POST'})
+            .then(response => response.json())
+            .catch(error => {console.error("Error:", error);});
+        }
+        function sendData() {
+            const text = document.getElementById('textInput').value;
+            const data = { message: text };
+            fetch('/tts', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            })
+            .then(data => {console.log('Server response:', data);})
+            .catch(error => {console.error('Error sending data:', error);});
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <button class="annoyme" onclick="sendAnnoyMe()">Annoy Me !</button>
+        <div class="input-group">
+            <input class="input" type="text" id="textInput" placeholder="Send Text-to-Speech"/>
+            <button class="send" onclick="sendData()">Send</button>
+        </div>
+        <div class="input-group">
+            <button class="annoyme" onclick="sendFullAnnoyance()" hidden="hidden">🚨 Full Annoyance 🚨</button>
+        </div>
+    </div>
+</body>
+</html>
