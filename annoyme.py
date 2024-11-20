@@ -1,9 +1,4 @@
-import random
-import time
-import threading
-import os
-
-import pyautogui
+import random, time, threading, os, pyautogui, re, shlex
 from flask import Flask, render_template, request
 from waitress import serve
 
@@ -49,27 +44,35 @@ def play_random_sounds():
 
 def annoy():
     actions = [move_mouse, move_windows, open_random_applications, type_random_stuff, play_random_sounds]
-    random.choice(actions)()
+    choice = random.choice(actions)
+    print(f'Performing action: {choice.__name__}')
+    choice()
 
 @app.route('/tts', methods=['POST'])
 def tts():
     text = request.json['message']
-    os.system(f'powershell -command "Add-Type -AssemblyName System.Speech; (New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak(\'{text}\')"')
+    text = re.sub(r'[^a-zA-Z0-9 .,?!]+', '', text)
+    text = shlex.quote(text)
+    try:
+        os.system(f'powershell -NoProfile -ExecutionPolicy Bypass -Command "Add-Type -AssemblyName System.Speech; (New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak(\'{text}\')"')
+    except:
+        return '500'
     return '200'
 
-@app.route('/all_actions', methods=['POST'])
+@app.route('/all_actions', methods=['GET', 'POST'])
 def all_actions():
     move_mouse()
     move_windows()
     open_random_applications()
     type_random_stuff()
     play_random_sounds()
+    return '200'
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/annoyme', methods=['POST'])
+@app.route('/annoyme', methods=['GET', 'POST'])
 def handle_annoy():
     global last_action_time
     current_time = time.time()
@@ -78,6 +81,7 @@ def handle_annoy():
         last_action_time = current_time
         return "200"
     else:
+        print('Cooldown time not reached')
         return "429"
 
 if __name__ == '__main__':
