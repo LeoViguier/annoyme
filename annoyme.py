@@ -1,13 +1,34 @@
-import random, time, threading, os, pyautogui, re, shlex
+import random, time, threading, os, pyautogui, re, shlex, sys
+from loguru import logger
 from flask import Flask, render_template, request
 from waitress import serve
+
+# Configuration
+cooldown_time = 0 # seconds
+last_action_time = 0
 
 path = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__)
 
-# Configuration
-cooldown_time = 300  # seconds
-last_action_time = 0
+log_format_stdout = (
+    "{time:YYYY-MM-DD HH:mm:ss} | "
+    "<level>{level: <8}</level> | "
+    "<level>{message}</level>"
+)
+log_format_file = (
+    "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
+    "<level>{level: <8}</level> | "
+    "<cyan>{name}</cyan>:<cyan>{function}</cyan> - "
+    "<level>{message}</level>"
+)
+logger.remove()
+logger.add(sys.stdout, format=log_format_stdout, level="INFO", colorize=True, backtrace=True, diagnose=True)
+logger.add(os.path.join(path, 'log/logs.log'), rotation='1 MB', retention='10 days', level='INFO', format=log_format_file)
+
+
+@app.before_request
+def log_request():
+    logger.info(f"Request: {request.remote_addr} -> {request.url}")
 
 def move_mouse():
     for _ in range(10):
@@ -45,7 +66,7 @@ def play_random_sounds():
 def annoy():
     actions = [move_mouse, move_windows, open_random_applications, type_random_stuff, play_random_sounds]
     choice = random.choice(actions)
-    print(f'Performing action: {choice.__name__}')
+    logger.info(f'Performing action: {choice.__name__}')
     choice()
 
 @app.route('/tts', methods=['POST'])
@@ -81,9 +102,10 @@ def handle_annoy():
         last_action_time = current_time
         return "200"
     else:
-        print('Cooldown time not reached')
+        logger.error('Cooldown time not reached')
         return "429"
 
 if __name__ == '__main__':
-    print('Server running on http://localhost:9876/')
-    serve(app, host='0.0.0.0', port=9876)
+    port = 9876
+    logger.info(f'Server running on http://localhost:{port}/')
+    serve(app, host='0.0.0.0', port=port)
