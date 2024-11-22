@@ -38,12 +38,9 @@ def move_mouse():
         time.sleep(0.1)
 
 def move_windows():
-    for _ in range(2):
-        pyautogui.hotkey('win', 'd')
-        time.sleep(0.5)
-        pyautogui.hotkey('win', 'd')
-        time.sleep(0.5)
-        pyautogui.hotkey('alt', 'tab')
+    for _ in range(3):
+        n = ['tab'] * random.randint(1, 5)
+        pyautogui.hotkey('alt', *n)
         time.sleep(0.5)
 
 def open_random_applications():
