@@ -1,6 +1,6 @@
 import random, time, threading, os, pyautogui, re, shlex, sys
 from loguru import logger
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, send_from_directory
 from waitress import serve
 import tkinter as tk
 
@@ -153,6 +153,12 @@ def all_actions():
     type_random_stuff()
     play_random_sounds()
     return '200'
+
+
+@app.route('/icon.png')
+def icon():
+    return send_from_directory(os.path.join(app.root_path, 'templates'), 'icon.png', mimetype='image/png')
+
 
 @app.route('/')
 def index():
