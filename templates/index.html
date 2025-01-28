@@ -83,7 +83,38 @@
             })
             .then(data => {console.log('Server response:', data);})
             .catch(error => {console.error('Error sending data:', error);});
+            document.getElementById('textInput').value = ''; // Clear the input field
         }
+        function sendText() {
+            const text = document.getElementById('textDisplay').value;
+            const data = { message: text };
+            fetch('/text', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            })
+            .then(data => {console.log('Server response:', data);})
+            .catch(error => {console.error('Error sending data:', error);});
+            document.getElementById('textDisplay').value = ''; // Clear the input field
+        }
+
+        // Function to handle the Enter key press
+        function handleEnterKey(event, callback) {
+            if (event.key === 'Enter') {
+                callback();
+            }
+        }
+
+        // Add event listeners when the DOM content is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('textInput').addEventListener('keypress', function(event) {
+                handleEnterKey(event, sendData);
+            });
+            document.getElementById('textDisplay').addEventListener('keypress', function(event) {
+                handleEnterKey(event, sendText);
+            });
+        });
+
     </script>
 </head>
 <body>
@@ -92,6 +123,10 @@
         <div class="input-group">
             <input class="input" type="text" id="textInput" placeholder="Send Text-to-Speech"/>
             <button class="send" onclick="sendData()">Send</button>
+        </div>
+        <div class="input-group">
+            <input class="input" type="text" id="textDisplay" placeholder="Display Text on Screen"/>
+            <button class="send" onclick="sendText()">Send</button>
         </div>
         <div class="input-group">
             <button class="annoyme" onclick="sendFullAnnoyance()">🚨 Full Annoyance 🚨</button>
