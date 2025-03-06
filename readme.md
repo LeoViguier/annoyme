@@ -1,6 +1,6 @@
 # AnnoyMe
 
-Do you have a long distance girlfriend who's love language is annoying you ?
+Do you have a long distance girlfriend whose love language is annoying you ?
 Do you spend too much time on your computer and not enough caring about her ?
 Are you still asking chatGPT for advice on what gift to get her ?
 
