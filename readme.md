@@ -13,6 +13,7 @@ This will:
 - Type random stuff
 - Play random notification sounds
 - TTS message
+- Display a message on your screen
 - All of them at the same time !
 
 You can configure a cooldown time to prevent it from being too annoying, but don't tell her.

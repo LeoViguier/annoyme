@@ -1,4 +1,4 @@
-import random, time, threading, os, pyautogui, re, shlex, sys
+import random, time, threading, os, pyautogui, re, shlex, sys, queue
 from loguru import logger
 from flask import Flask, render_template, request, send_from_directory
 from waitress import serve
@@ -8,6 +8,7 @@ import tkinter as tk
 COOLDOWN_TIME = 0 # seconds
 LAST_ACTION_TIME = 0
 ONLY_CUSTOM_SOUNDS = True
+WINDOW = None
 
 path = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__)
@@ -28,50 +29,126 @@ logger.add(sys.stdout, format=log_format_stdout, level="INFO", colorize=True, ba
 logger.add(os.path.join(path, 'log/logs.log'), rotation='1 MB', retention='10 days', level='INFO', format=log_format_file)
 
 
-class MovingText:
-    def __init__(self, root : tk.Tk, text):
-        self.root = root
-        self.root.overrideredirect(True)  # Remove window decorations
-        self.root.attributes("-topmost", True)  # Keep the window on top
-        self.root.attributes("-transparentcolor", "white")  # Make the background transparent
+class TextDisplayManager:
+    def __init__(self):
+        self.message_queue = queue.Queue()
+        self.window_active = False
+        self.window_thread = None
+        self.lock = threading.Lock()
 
-        self.screen_width = self.root.winfo_screenwidth()
-        self.screen_height = self.root.winfo_screenheight()
-
-        self.text = text
-        self.font_size = random.randint(50, 100)
-        self.speed = random.randint(3, 5) # adjust based on the speed you want the text to move
-
-        self.canvas = tk.Canvas(root, bg="white", highlightthickness=0)
-        self.canvas.pack(fill=tk.BOTH, expand=True)
-
-        self.direction = random.choice(["left_to_right", "right_to_left"])
-        if self.direction == "left_to_right":
-            self.x = 0
-        else:
-            self.x = self.screen_width
-
-        self.y = random.randint(0, self.screen_height - self.font_size)
-
-        self.text_id = self.canvas.create_text(self.x, self.y, text=self.text, font=("Arial", self.font_size), fill="red")
-
-        self.move_text()
-
-    def move_text(self):
-        if self.direction == "left_to_right":
-            self.x += 3 # Adjust based on your screen refresh rate
-            if self.x > self.screen_width:
-                self.root.destroy()  # Close the window when text goes off-screen
+    def enqueue_message(self, text):
+        """Add a message to the queue for display"""
+        self.message_queue.put(text)
+        
+        with self.lock:
+            if not self.window_active:
+                self.window_active = True
+                self.window_thread = threading.Thread(target=self._run_window_thread)
+                self.window_thread.daemon = True
+                self.window_thread.start()
+    
+    def _run_window_thread(self):
+        """Run the Tkinter window in its own thread"""
+        root = tk.Tk()
+        root.overrideredirect(True)  # Remove window decorations
+        root.attributes("-topmost", True)  # Keep the window on top
+        root.attributes("-transparentcolor", "white")  # Make the background transparent
+        screen_width = root.winfo_screenwidth()
+        screen_height = root.winfo_screenheight()
+        root.geometry(f"{screen_width}x{screen_height}+0+0")
+        
+        canvas = tk.Canvas(root, bg="white", highlightthickness=0)
+        canvas.pack(fill=tk.BOTH, expand=True)
+        
+        active_texts = []
+        
+        def check_messages():
+            try:
+                while True:
+                    try:
+                        text = self.message_queue.get_nowait()
+                        text_obj = create_text_object(text)
+                        active_texts.append(text_obj)
+                        self.message_queue.task_done()
+                    except queue.Empty:
+                        break
+            except Exception as e:
+                logger.error(f"Error processing message: {e}")
+            
+            root.after(100, check_messages)
+        
+        def create_text_object(text):
+            font_size = random.randint(50, 100)
+            speed = random.randint(3, 5)
+            direction = random.choice(["left_to_right", "right_to_left"])
+            
+            if direction == "left_to_right":
+                x = 0
+            else:
+                x = screen_width
+                
+            y = random.randint(0, screen_height - font_size)
+            text_id = canvas.create_text(x, y, text=text, font=("Arial", font_size), fill="red")
+            
+            text_obj = {
+                "id": text_id,
+                "x": x,
+                "y": y,
+                "direction": direction,
+                "speed": speed,
+                "screen_width": screen_width,
+                "screen_height": screen_height
+            }
+            
+            move_text(text_obj)
+            return text_obj
+        
+        def move_text(text_obj):
+            if text_obj["direction"] == "left_to_right":
+                text_obj["x"] += 3
+                if text_obj["x"] > text_obj["screen_width"]:
+                    remove_text(text_obj)
+                    return
+            else:
+                text_obj["x"] -= 3
+                if text_obj["x"] < 0:
+                    remove_text(text_obj)
+                    return
+                    
+            canvas.coords(text_obj["id"], text_obj["x"], text_obj["y"])
+            root.after(text_obj["speed"], lambda: move_text(text_obj))
+        
+        def remove_text(text_obj):
+            canvas.delete(text_obj["id"])
+            if text_obj in active_texts:
+                active_texts.remove(text_obj)
+        
+        def check_window_status():
+            if not active_texts and self.message_queue.empty():
+                with self.lock:
+                    self.window_active = False
+                root.destroy()
                 return
-        else:
-            self.x -= 3
-            if self.x < 0:
-                self.root.destroy()
-                return
+            
+            # Keep checking
+            root.after(1000, check_window_status)
+        
+        check_messages()
+        check_window_status()
+        root.mainloop()
+        
+        with self.lock:
+            self.window_active = False
 
-        self.canvas.coords(self.text_id, self.x, self.y)
-        self.root.after(self.speed, self.move_text)
+# Create a global instance of the manager
+text_manager = TextDisplayManager()
 
+@app.route('/text', methods=['POST'])
+def text():
+    text = request.json['message']
+    logger.info(f'Moving text: {text}')
+    text_manager.enqueue_message(text)
+    return '200'
 
 @app.before_request
 def log_request():
@@ -126,22 +203,6 @@ def tts():
         os.system(f'powershell -NoProfile -ExecutionPolicy Bypass -Command "Add-Type -AssemblyName System.Speech; (New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak(\'{text}\')"')
     except:
         return '500'
-    return '200'
-
-
-def display_text(text):
-    root = tk.Tk()
-    root.geometry(f"{root.winfo_screenwidth()}x{root.winfo_screenheight()}+0+0")
-    app = MovingText(root, text)
-    root.mainloop()
-
-
-@app.route('/text', methods=['POST'])
-def text():
-    text = request.json['message']
-    logger.info(f'Moving text: {text}')
-    threading.Thread(target=display_text, args=(text,)).start()
-
     return '200'
 
 
