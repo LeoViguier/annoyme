@@ -12,34 +12,54 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            background: #efefef;
+            background: #121212; /* Dark background */
+            color: #e0e0e0; /* Light text color for contrast */
+            transition: background 0.3s, color 0.3s;
+        }
+        body.light-mode {
+            background: #f5f5f5; /* Light background */
+            color: #333333; /* Dark text color for contrast */
         }
         .container {
             text-align: center;
         }
         button {
-        width: 15em;
-        height: 4em;
-        background: #efefef;
-        border: none;
-        border-radius: .5rem;
-        color: #444;
-        font-size: 1rem;
-        font-weight: 700;
-        text-align: center;
-        outline: none;
-        cursor: pointer;
-        transition: .2s ease-in-out;
-        box-shadow: -6px -6px 14px rgba(255, 255, 255, .7),
-                    -6px -6px 10px rgba(255, 255, 255, .5),
-                    6px 6px 8px rgba(255, 255, 255, .075),
-                    6px 6px 10px rgba(0, 0, 0, .15);
+            width: 15em;
+            height: 4em;
+            background: #1e1e1e; /* Dark button background */
+            border: none;
+            border-radius: .5rem;
+            color: #e0e0e0; /* Light text color */
+            font-size: 1rem;
+            font-weight: 700;
+            text-align: center;
+            outline: none;
+            cursor: pointer;
+            transition: .2s ease-in-out;
+            box-shadow: -2px -2px 14px rgba(40, 40, 40, .7),
+                        -2px -2px 10px rgba(40, 40, 40, .5),
+                        2px 2px 8px rgba(10, 10, 10, .5),
+                        2px 2px 10px rgba(0, 0, 0, .4);
+        }
+        .light-mode button {
+            background: #e0e0e0;
+            color: #333;
+            box-shadow: -2px -2px 14px rgba(255, 255, 255, .7),
+                        -2px -2px 10px rgba(255, 255, 255, .5),
+                        2px 2px 8px rgba(200, 200, 200, .5),
+                        2px 2px 10px rgba(150, 150, 150, .4);
         }
         button:active {
-        box-shadow: inset -2px -2px 6px rgba(255, 255, 255, .7),
-                    inset -2px -2px 4px rgba(255, 255, 255, .5),
-                    inset 2px 2px 2px rgba(255, 255, 255, .075),
-                    inset 2px 2px 4px rgba(0, 0, 0, .15);
+            box-shadow: inset -2px -2px 6px rgba(40, 40, 40, .7),
+                        inset -2px -2px 4px rgba(40, 40, 40, .5),
+                        inset 2px 2px 2px rgba(10, 10, 10, .5),
+                        inset 2px 2px 4px rgba(0, 0, 0, .4);
+        }
+        .light-mode button:active {
+            box-shadow: inset -2px -2px 6px rgba(255, 255, 255, .7),
+                        inset -2px -2px 4px rgba(255, 255, 255, .5),
+                        inset 2px 2px 2px rgba(200, 200, 200, .5),
+                        inset 2px 2px 4px rgba(150, 150, 150, .4);
         }
 
         .input-group {
@@ -58,8 +78,49 @@
             padding: 10px;
             font-size: 16px;
             width: 12em;
-            border: 1px solid #ddd;
+            border: 1px solid #333; /* Darker border */
             border-radius: .5rem;
+            background: #2d2d2d; /* Dark input background */
+            color: #e0e0e0; /* Light text color */
+            transition: background 0.3s, color 0.3s, border-color 0.3s;
+        }
+        
+        .light-mode .input {
+            border: 1px solid #ccc;
+            background: #ffffff;
+            color: #333333;
+        }
+
+        /* Add focus styles for better accessibility */
+        .input:focus {
+            outline: none;
+            border-color: #4d4d4d;
+            box-shadow: 0 0 0 2px rgba(80, 80, 80, 0.3);
+        }
+        
+        .light-mode .input:focus {
+            border-color: #999;
+            box-shadow: 0 0 0 2px rgba(180, 180, 180, 0.3);
+        }
+        
+        /* Theme toggle button styling */
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: auto;
+            height: auto;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .theme-icon {
+            font-size: 1.2rem;
         }
     </style>
     <script>
@@ -105,19 +166,57 @@
             }
         }
 
+        // Function to toggle between dark and light mode
+        function toggleTheme() {
+            const body = document.body;
+            const themeToggleBtn = document.getElementById('themeToggle');
+            
+            if (body.classList.contains('light-mode')) {
+                // Switch to dark mode
+                body.classList.remove('light-mode');
+                themeToggleBtn.innerHTML = '<span class="theme-icon">☀️</span> Light Mode';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                // Switch to light mode
+                body.classList.add('light-mode');
+                themeToggleBtn.innerHTML = '<span class="theme-icon">🌙</span> Dark Mode';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+        
+        // Load saved theme preference
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const themeToggleBtn = document.getElementById('themeToggle');
+            
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-mode');
+                themeToggleBtn.innerHTML = '<span class="theme-icon">🌙</span> Dark Mode';
+            } else {
+                themeToggleBtn.innerHTML = '<span class="theme-icon">☀️</span> Light Mode';
+            }
+        }
+
         // Add event listeners when the DOM content is loaded
         document.addEventListener('DOMContentLoaded', function() {
+            // Load saved theme
+            loadTheme();
+            
+            // Add event listeners for text input fields
             document.getElementById('textInput').addEventListener('keypress', function(event) {
                 handleEnterKey(event, sendData);
             });
             document.getElementById('textDisplay').addEventListener('keypress', function(event) {
                 handleEnterKey(event, sendText);
             });
+            
+            // Add event listener for theme toggle button
+            document.getElementById('themeToggle').addEventListener('click', toggleTheme);
         });
-
     </script>
 </head>
 <body>
+    <button id="themeToggle" class="theme-toggle"><span class="theme-icon">☀️</span> Light Mode</button>
     <div class="container">
         <button class="annoyme" onclick="sendAnnoyMe()">Annoy Me !</button>
         <div class="input-group">
