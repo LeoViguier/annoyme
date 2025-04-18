@@ -8,7 +8,6 @@ import tkinter as tk
 COOLDOWN_TIME = 0 # seconds
 LAST_ACTION_TIME = 0
 ONLY_CUSTOM_SOUNDS = True
-WINDOW = None
 
 path = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__)
@@ -80,13 +79,8 @@ class TextDisplayManager:
         def create_text_object(text):
             font_size = random.randint(50, 100)
             speed = random.randint(3, 5)
-            direction = random.choice(["left_to_right", "right_to_left"])
             
-            if direction == "left_to_right":
-                x = 0
-            else:
-                x = screen_width
-                
+            x = screen_width    
             y = random.randint(0, screen_height - font_size)
             text_id = canvas.create_text(x, y, text=text, font=("Arial", font_size), fill="red")
             
@@ -94,7 +88,6 @@ class TextDisplayManager:
                 "id": text_id,
                 "x": x,
                 "y": y,
-                "direction": direction,
                 "speed": speed,
                 "screen_width": screen_width,
                 "screen_height": screen_height
@@ -104,16 +97,10 @@ class TextDisplayManager:
             return text_obj
         
         def move_text(text_obj):
-            if text_obj["direction"] == "left_to_right":
-                text_obj["x"] += 3
-                if text_obj["x"] > text_obj["screen_width"]:
-                    remove_text(text_obj)
-                    return
-            else:
-                text_obj["x"] -= 3
-                if text_obj["x"] < 0:
-                    remove_text(text_obj)
-                    return
+            text_obj["x"] -= 3
+            if text_obj["x"] < 0:
+                remove_text(text_obj)
+                return
                     
             canvas.coords(text_obj["id"], text_obj["x"], text_obj["y"])
             root.after(text_obj["speed"], lambda: move_text(text_obj))
@@ -140,15 +127,16 @@ class TextDisplayManager:
         with self.lock:
             self.window_active = False
 
-# Create a global instance of the manager
-text_manager = TextDisplayManager()
 
 @app.route('/text', methods=['POST'])
 def text():
-    text = request.json['message']
-    logger.info(f'Moving text: {text}')
-    text_manager.enqueue_message(text)
-    return '200'
+    try:
+        text = request.json['message']
+        logger.info(f'Moving text: {text}')
+        TEXT_MANAGER.enqueue_message(text)
+        return '200'
+    except:
+        logger.exception('Error in /text endpoint')
 
 @app.before_request
 def log_request():
@@ -238,6 +226,11 @@ def handle_annoy():
         return "429"
 
 if __name__ == '__main__':
+    TEXT_MANAGER = TextDisplayManager()
     port = 9876
     logger.info(f'Server running on http://localhost:{port}/')
-    serve(app, host='0.0.0.0', port=port)
+    try:
+        serve(app, host='0.0.0.0', port=port)
+    except:
+        logger.exception('Error starting server')
+        sys.exit(1)
